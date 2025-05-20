@@ -74,12 +74,13 @@
     pg_db: "{{ lookup('aws_ssm', '/myapp/POSTGRES_DB', region=aws_region, decrypt=True) }}"
 
 - name: Run Docker Compose
-  shell: docker-compose -f /opt/3tier-app/docker-compose.yml up -d
+  shell: docker-compose -f /opt/3tier-app/backend/docker-compose.yml up -d
   args:
-    chdir: /opt/3tier-app
+    chdir: /opt/3tier-app/backend
   environment:
     POSTGRES_USER: "{{ pg_user }}"
     POSTGRES_PASSWORD: "{{ pg_pass }}"
     POSTGRES_DB: "{{ pg_db }}"
     PATH: "/usr/local/bin:/usr/bin:/bin"
+
 
