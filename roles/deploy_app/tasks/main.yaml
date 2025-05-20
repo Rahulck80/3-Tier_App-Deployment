@@ -59,6 +59,14 @@
     dest: /opt/3tier-app
     version: main
 
+- name: Install MySQL libraries
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    executable: pip3.9
+  loop:
+  - botocore
+  - boto3
+
 - name: Fetch DB secrets from SSM
   set_fact:
     pg_user: "{{ lookup('aws_ssm', '/myapp/POSTGRES_USER', region=aws_region, decrypt=True) }}"
