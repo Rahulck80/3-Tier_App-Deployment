@@ -74,7 +74,7 @@
     pg_db: "{{ lookup('aws_ssm', '/myapp/POSTGRES_DB', region=aws_region, decrypt=True) }}"
 
 - name: Run Docker Compose
-  shell: docker-compose up -d
+  shell: docker-compose -f /opt/3tier-app/docker-compose.yml up -d
   args:
     chdir: /opt/3tier-app
   environment:
