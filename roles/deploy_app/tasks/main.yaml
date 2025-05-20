@@ -9,6 +9,13 @@
     url: https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-linux-x86_64
     dest: /usr/local/bin/docker-compose
     mode: '0755'
+
+- name: Start and enable Docker service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+    
 - name: Ensure docker group exists
   group:
     name: docker
