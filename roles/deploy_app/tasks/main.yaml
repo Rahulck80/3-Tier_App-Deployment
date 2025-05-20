@@ -13,7 +13,7 @@
   group:
     name: docker
     state: present
-    
+
 - name: Add user to docker group
   user:
     name: "{{ ansible_user }}"
@@ -26,8 +26,14 @@
     dest: /opt/3tier-app
     version: main
 
+- name: Install AWS CLI
+  dnf:
+    name: awscli
+    state: present
+
 - name: Run Docker Compose with secrets from SSM
   shell: |
+    export PATH=$PATH:/usr/local/bin
     export POSTGRES_USER=$(aws ssm get-parameter --name "/myapp/POSTGRES_USER" --with-decryption --query "Parameter.Value" --output text)
     export POSTGRES_PASSWORD=$(aws ssm get-parameter --name "/myapp/POSTGRES_PASSWORD" --with-decryption --query "Parameter.Value" --output text)
     export POSTGRES_DB=$(aws ssm get-parameter --name "/myapp/POSTGRES_DB" --with-decryption --query "Parameter.Value" --output text)
@@ -36,4 +42,6 @@
     chdir: /opt/3tier-app
     executable: /bin/bash
   environment:
-    AWS_DEFAULT_REGION: "{{ aws_region | default('ap-south-1') }}"
+    PATH: "/usr/local/bin:/usr/bin:/bin"
+    AWS_DEFAULT_REGION: "{{ aws_region | default('us-east-1') }}"
+
