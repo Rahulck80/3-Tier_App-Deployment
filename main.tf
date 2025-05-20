@@ -1,6 +1,7 @@
-resource "aws_instance" "docker" {
+resource "aws_instance" "Ansible" {
+  for_each = var.instances
   ami                    = "ami-09c813fb71547fc4f"
-  instance_type          = "t3.micro"
+  instance_type          = each.value
   vpc_security_group_ids = [aws_security_group.allow_tls.id]
 
   root_block_device {
@@ -26,7 +27,7 @@ resource "aws_instance" "docker" {
   }
   
   tags = {
-    Name = "Docker"
+    Name = each.key
     
   }
 
@@ -63,9 +64,10 @@ resource "aws_security_group" "allow_tls" {
 }
 
 resource "aws_route53_record" "www" {
+  for_each = aws_instance.Ansible
   zone_id = var.zone_id
-  name    = "docker-${var.domain_name}"
+  name    = each.key == "Ansible" ? var.domain_name : "${each.key}.${var.domain_name}"
   type    = "A"
   ttl     = 1
-  records = [aws_instance.docker.public_ip]
+  records = each.key == "Ansible" ? [each.value.public_ip] : [each.value.private_ip]
 }
