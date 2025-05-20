@@ -6,7 +6,7 @@
       - lvm2
     state: present
     update_cache: yes
-    
+
 - name: Remove podman-docker package if present (conflicts with Docker CE)
   dnf:
     name: podman-docker
@@ -59,16 +59,19 @@
     dest: /opt/3tier-app
     version: main
 
-- name: Run Docker Compose with secrets from SSM
-  shell: |
-    export PATH=$PATH:/usr/local/bin
-    export POSTGRES_USER=$(aws ssm get-parameter --name "/myapp/POSTGRES_USER" --with-decryption --query "Parameter.Value" --output text)
-    export POSTGRES_PASSWORD=$(aws ssm get-parameter --name "/myapp/POSTGRES_PASSWORD" --with-decryption --query "Parameter.Value" --output text)
-    export POSTGRES_DB=$(aws ssm get-parameter --name "/myapp/POSTGRES_DB" --with-decryption --query "Parameter.Value" --output text)
-    docker-compose up -d
+- name: Fetch DB secrets from SSM
+  set_fact:
+    pg_user: "{{ lookup('aws_ssm', '/myapp/POSTGRES_USER', region=aws_region, decrypt=True) }}"
+    pg_pass: "{{ lookup('aws_ssm', '/myapp/POSTGRES_PASSWORD', region=aws_region, decrypt=True) }}"
+    pg_db: "{{ lookup('aws_ssm', '/myapp/POSTGRES_DB', region=aws_region, decrypt=True) }}"
+
+- name: Run Docker Compose
+  shell: docker-compose up -d
   args:
     chdir: /opt/3tier-app
-    executable: /bin/bash
   environment:
+    POSTGRES_USER: "{{ pg_user }}"
+    POSTGRES_PASSWORD: "{{ pg_pass }}"
+    POSTGRES_DB: "{{ pg_db }}"
     PATH: "/usr/local/bin:/usr/bin:/bin"
-    AWS_DEFAULT_REGION: "{{ aws_region }}"
+
