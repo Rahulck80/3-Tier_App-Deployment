@@ -6,6 +6,11 @@
       - lvm2
     state: present
     update_cache: yes
+    
+- name: Remove podman-docker package if present (conflicts with Docker CE)
+  dnf:
+    name: podman-docker
+    state: absent
 
 - name: Add Docker CE repository
   get_url:
