@@ -76,7 +76,7 @@
 - name: Run Docker Compose
   shell: docker-compose up -d
   args:
-    chdir: /opt/3tier-app/backend
+    chdir: /opt/3tier-app
   environment:
     POSTGRES_USER: "{{ pg_user }}"
     POSTGRES_PASSWORD: "{{ pg_pass }}"
