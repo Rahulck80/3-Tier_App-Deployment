@@ -1,5 +1,7 @@
 - name: Deploy 3-tier Python + NodeJS App
-  hosts: webserver
+  hosts: localhost
+  connection: local
   become: true
   roles:
     - deploy_app
+
