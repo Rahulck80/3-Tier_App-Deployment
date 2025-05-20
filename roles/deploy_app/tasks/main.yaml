@@ -1,6 +1,6 @@
 - name: Install Docker
   dnf:
-    name: docker.io
+    name: docker
     state: present
     update_cache: yes
 
@@ -22,13 +22,14 @@
     dest: /opt/3tier-app
     version: main
 
-- name: Copy environment file securely
-  copy:
-    src: .env
-    dest: /opt/3tier-app/.env
-    mode: '0600'
-
-- name: Start application with Docker Compose
-  command: docker-compose up -d
+- name: Run Docker Compose with secrets from SSM
+  shell: |
+    export POSTGRES_USER=$(aws ssm get-parameter --name "/myapp/POSTGRES_USER" --with-decryption --query "Parameter.Value" --output text)
+    export POSTGRES_PASSWORD=$(aws ssm get-parameter --name "/myapp/POSTGRES_PASSWORD" --with-decryption --query "Parameter.Value" --output text)
+    export POSTGRES_DB=$(aws ssm get-parameter --name "/myapp/POSTGRES_DB" --with-decryption --query "Parameter.Value" --output text)
+    docker-compose up -d
   args:
     chdir: /opt/3tier-app
+    executable: /bin/bash
+  environment:
+    AWS_DEFAULT_REGION: "{{ aws_region | default('ap-south-1') }}"
