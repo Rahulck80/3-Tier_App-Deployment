@@ -1,54 +1,79 @@
-- name: Install Docker
-  dnf:
-    name: docker
-    state: present
-    update_cache: yes
+---
+- name: Setup 3-tier App Environment with Docker and AWS SSM
+  hosts: localhost
+  become: true
+  vars:
+    aws_region: "us-east-1"
 
-- name: Install Docker Compose
-  get_url:
-    url: https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-linux-x86_64
-    dest: /usr/local/bin/docker-compose
-    mode: '0755'
+  tasks:
 
-- name: Start and enable Docker service
-  systemd:
-    name: docker
-    state: started
-    enabled: yes
-    
-- name: Ensure docker group exists
-  group:
-    name: docker
-    state: present
+    - name: Install prerequisites for Docker
+      dnf:
+        name:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+        state: present
+        update_cache: yes
 
-- name: Add user to docker group
-  user:
-    name: "{{ ansible_user }}"
-    groups: docker
-    append: yes
+    - name: Add Docker CE repository (for RHEL 9/CentOS Stream)
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
 
-- name: Clone application repo
-  git:
-    repo: 'https://github.com/Lakshmanp145/docker-compose.git'
-    dest: /opt/3tier-app
-    version: main
+    - name: Install Docker
+      dnf:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
 
-- name: Install AWS CLI
-  dnf:
-    name: awscli
-    state: present
+    - name: Install Docker Compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
 
-- name: Run Docker Compose with secrets from SSM
-  shell: |
-    export PATH=$PATH:/usr/local/bin
-    export POSTGRES_USER=$(aws ssm get-parameter --name "/myapp/POSTGRES_USER" --with-decryption --query "Parameter.Value" --output text)
-    export POSTGRES_PASSWORD=$(aws ssm get-parameter --name "/myapp/POSTGRES_PASSWORD" --with-decryption --query "Parameter.Value" --output text)
-    export POSTGRES_DB=$(aws ssm get-parameter --name "/myapp/POSTGRES_DB" --with-decryption --query "Parameter.Value" --output text)
-    docker-compose up -d
-  args:
-    chdir: /opt/3tier-app
-    executable: /bin/bash
-  environment:
-    PATH: "/usr/local/bin:/usr/bin:/bin"
-    AWS_DEFAULT_REGION: "{{ aws_region | default('us-east-1') }}"
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
 
+    - name: Ensure docker group exists
+      group:
+        name: docker
+        state: present
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install AWS CLI
+      dnf:
+        name: awscli
+        state: present
+
+    - name: Clone application repo
+      git:
+        repo: 'https://github.com/Lakshmanp145/docker-compose.git'
+        dest: /opt/3tier-app
+        version: main
+
+    - name: Run Docker Compose with secrets from SSM
+      shell: |
+        export PATH=$PATH:/usr/local/bin
+        export POSTGRES_USER=$(aws ssm get-parameter --name "/myapp/POSTGRES_USER" --with-decryption --query "Parameter.Value" --output text)
+        export POSTGRES_PASSWORD=$(aws ssm get-parameter --name "/myapp/POSTGRES_PASSWORD" --with-decryption --query "Parameter.Value" --output text)
+        export POSTGRES_DB=$(aws ssm get-parameter --name "/myapp/POSTGRES_DB" --with-decryption --query "Parameter.Value" --output text)
+        docker-compose up -d
+      args:
+        chdir: /opt/3tier-app
+        executable: /bin/bash
+      environment:
+        PATH: "/usr/local/bin:/usr/bin:/bin"
+        AWS_DEFAULT_REGION: "{{ aws_region }}"
+      become: true

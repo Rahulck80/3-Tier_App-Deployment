@@ -1,1 +1,2 @@
 ansible_user: docker
+aws_region: us-east-1
