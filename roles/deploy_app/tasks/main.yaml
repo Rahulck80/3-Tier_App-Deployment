@@ -55,7 +55,7 @@
 
 - name: Clone application repo
   git:
-    repo: 'https://github.com/Lakshmanp145/docker-compose.git'
+    repo: 'https://github.com/Rahulck80/docker-compose.git'
     dest: /opt/3tier-app
     version: main
 
